@@ -1,4 +1,6 @@
-# Cloudflared
+# k8s-cloudflared
+
+[![Build Status](https://travis-ci.org/infolinks/k8s-cloudflared.svg?branch=master)](https://travis-ci.org/infolinks/k8s-cloudflared)
 
 Container for continually updating Cloudflare DNS records for Kubernetes
 `Service` and `Ingress` objects found in a cluster.
