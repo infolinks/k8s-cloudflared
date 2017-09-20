@@ -77,6 +77,7 @@ def main():
     argparser = argparse.ArgumentParser(description='Updates Cloudflare DNS records')
     argparser.add_argument('--domain',
                            metavar='DOMAIN',
+                           required=True,
                            help='the public suffix domain name, eg. \'mydomain.com\' (which is the default)')
     argparser.add_argument('--auth-email',
                            required=True,
