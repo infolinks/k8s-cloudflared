@@ -17,7 +17,7 @@ script:
 after_script:
   - |
     if [[ "${TRAVIS_BRANCH}" == "master" ]]; then
-      docker run infolinks/github-release:v3 \
+      docker run infolinks/github-release \
           --token="${GITHUB_ACCESS_TOKEN}" \
           --repo="${TRAVIS_REPO_SLUG}" \
           --commit="${TRAVIS_COMMIT}"
