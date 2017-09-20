@@ -2,16 +2,24 @@
 
 AUTH_EMAIL_FILE=./conf/cf_auth_email.txt
 AUTH_KEY_FILE=./conf/cf_auth_key.txt
+DOMAIN_FILE=./conf/cf_domain.txt
 
 while true; do
-    # read Cloud authentication Email
+    # read domain name
+    [[ -e "${DOMAIN_FILE}" ]] && DOMAIN=$(cat ${DOMAIN_FILE})
+    if [[ -z "${DOMAIN}" ]]; then
+        echo "DOMAIN not defined, and empty Cloudflare domain at '${DOMAIN_FILE}'!" >&2
+        exit 1
+    fi
+
+    # read Cloudflare authentication Email
     [[ -e "${AUTH_EMAIL_FILE}" ]] && AUTH_EMAIL=$(cat ${AUTH_EMAIL_FILE})
     if [[ -z "${AUTH_EMAIL}" ]]; then
         echo "AUTH_EMAIL not defined, and empty Cloudflare authentication Email at '${AUTH_EMAIL_FILE}'!" >&2
         exit 1
     fi
 
-    # read Cloud authentication key
+    # read Cloudflare authentication key
     [[ -e "${AUTH_KEY_FILE}" ]] && AUTH_KEY=$(cat ${AUTH_KEY_FILE})
     if [[ -z "${AUTH_KEY}" ]]; then
         echo "AUTH_KEY not defined, and empty Cloudflare authentication key at '${AUTH_KEY_FILE}'!" >&2
@@ -31,7 +39,9 @@ while true; do
                         "name": .metadata.name,
                         ips: [.status.loadBalancer.ingress[].ip],
                         "dns": .metadata.annotations.dns|fromjson
-                    }]' | $(dirname $0)/update_dns_records.py --auth-email "${AUTH_EMAIL}" --auth-key "${AUTH_KEY}"
+                    }]' | $(dirname $0)/update_dns_records.py --domain "${DOMAIN}" \
+                                                              --auth-email "${AUTH_EMAIL}" \
+                                                              --auth-key "${AUTH_KEY}"
     if [[ $? != 0 ]]; then
         echo "Updating service DNS records failed!" >&2
         exit 1
@@ -50,7 +60,9 @@ while true; do
                         "name": .metadata.name,
                         ips: [.status.loadBalancer.ingress[].ip],
                         "dns": [ .spec.rules[].host ]
-                    }]' | $(dirname $0)/update_dns_records.py --auth-email "${AUTH_EMAIL}" --auth-key "${AUTH_KEY}"
+                    }]' | $(dirname $0)/update_dns_records.py --domain "${DOMAIN}" \
+                                                              --auth-email "${AUTH_EMAIL}" \
+                                                              --auth-key "${AUTH_KEY}"
     if [[ $? != 0 ]]; then
         echo "Updating ingress DNS records failed!" >&2
         exit 1
