@@ -28,7 +28,6 @@ while true; do
 
     # fetch list of services from Kubernetes as JSON, filtering to only those with dns annotations, and redirecting them
     # to our Python script which will ensure their DNS records are correctly defined in Cloudflare
-    echo "Validating service DNS records..."
     kubectl get services --all-namespaces --output=json | jq -r '
                     [.items[] |
                     select(.spec.type == "LoadBalancer") |
@@ -49,7 +48,6 @@ while true; do
 
     # fetch list of ingresses from Kubernetes as JSON, filtering to only those that got their public IP, and redirecting
     # them to our Python script which will ensure their DNS records are correctly defined in Cloudflare
-    echo "Validating ingress DNS records..."
     kubectl get ingress --all-namespaces --output=json | jq -r '
                     [.items[] |
                     select(.status.loadBalancer) |

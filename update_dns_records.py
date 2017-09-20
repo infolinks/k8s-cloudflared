@@ -23,7 +23,6 @@ def build_cloudflare_request_headers(auth_email, auth_key):
 def update_dns_record(zone_id, auth_email, auth_key, subdomain, domain, ip_address):
     full_name = subdomain + '.' + domain
 
-    print "Validataing domain name '%s' points to '%s'..." % (full_name, ip_address)
     dns_lookup = requests.get(CF_ZONE_RECORDS % zone_id,
                               headers=build_cloudflare_request_headers(auth_email, auth_key),
                               params={'name': full_name}).json()
@@ -90,11 +89,9 @@ def main():
     args = argparser.parse_args()
 
     # TODO: consider caching Cloudflare zone ID value in a file
-    print "Obtaining Cloudflare zone ID for '%s'..." % args.domain
     zone_id_ = requests.get(CF_ZONES_URL,
                             headers=build_cloudflare_request_headers(args.auth_email, args.auth_key),
                             params={'name': args.domain}).json()['result'][0]['id']
-    print "Zone ID for '%s' is %s" % (args.domain, zone_id_)
 
     # read JSON from stdin
     try:
@@ -112,7 +109,6 @@ def main():
             for ip_address in service_ip_addresses:
                 subdomain = dns[0:dns.rfind('.' + args.domain)] if dns.endswith('.' + args.domain) else dns
                 update_dns_record(zone_id_, args.auth_email, args.auth_key, subdomain, args.domain, ip_address)
-    print "DONE."
 
 if __name__ == "__main__":
     main()
