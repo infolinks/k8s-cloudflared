@@ -5,16 +5,16 @@ AUTH_KEY_FILE=./conf/cf_auth_key.txt
 
 while true; do
     # read Cloud authentication Email
-    AUTH_EMAIL=$(cat ${AUTH_EMAIL_FILE})
+    [[ -e "${AUTH_EMAIL_FILE}" ]] && AUTH_EMAIL=$(cat ${AUTH_EMAIL_FILE})
     if [[ -z "${AUTH_EMAIL}" ]]; then
-        echo "empty Cloudflare authentication Email at '${AUTH_EMAIL_FILE}'!" >&2
+        echo "AUTH_EMAIL not defined, and empty Cloudflare authentication Email at '${AUTH_EMAIL_FILE}'!" >&2
         exit 1
     fi
 
     # read Cloud authentication key
-    AUTH_KEY=$(cat ${AUTH_KEY_FILE})
+    [[ -e "${AUTH_KEY_FILE}" ]] && AUTH_KEY=$(cat ${AUTH_KEY_FILE})
     if [[ -z "${AUTH_KEY}" ]]; then
-        echo "empty Cloudflare authentication key at '${AUTH_KEY_FILE}'!" >&2
+        echo "AUTH_KEY not defined, and empty Cloudflare authentication key at '${AUTH_KEY_FILE}'!" >&2
         exit 1
     fi
 
