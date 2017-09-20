@@ -49,9 +49,9 @@ def update_dns_record(zone_id, auth_email, auth_key, subdomain, domain, ip_addre
             delete_url = CF_ZONE_RECORD_ID % (zone_id, rec_id)
             print "Deleting DNS record with ID '%s' using URL: %s" % (rec_id, delete_url)
             # TODO: print IP address of record before deleting it
-            # requests.delete(delete_url,
-            #                 headers=build_cloudflare_request_headers(auth_email, auth_key)) \
-            #     .raise_for_status()
+            requests.delete(delete_url,
+                            headers=build_cloudflare_request_headers(auth_email, auth_key)) \
+                .raise_for_status()
 
         print "Creating new record for domain name '%s' and IP address '%s'..." % (full_name, ip_address)
         requests.post(CF_ZONE_RECORDS % zone_id,
