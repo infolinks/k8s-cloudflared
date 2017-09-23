@@ -2,18 +2,10 @@ language: generic
 sudo: required
 services:
   - docker
-
 before_script:
   - docker login -u "${DOCKERHUB_USERNAME}" -p "${DOCKERHUB_PASSWORD}"
 script:
-  - docker build -t infolinks/k8s-cloudflared:${TRAVIS_COMMIT} .
-  - |
-    if [[ ${TRAVIS_TAG} =~ ^v[0-9]+$ ]]; then
-      docker tag infolinks/k8s-cloudflared:${TRAVIS_COMMIT} infolinks/k8s-cloudflared:${TRAVIS_TAG}
-      docker push infolinks/k8s-cloudflared:${TRAVIS_TAG}
-      docker tag infolinks/k8s-cloudflared:${TRAVIS_COMMIT} infolinks/k8s-cloudflared:latest
-      docker push infolinks/k8s-cloudflared:latest
-    fi
+  - .travis/build.sh
 after_script:
   - |
     if [[ "${TRAVIS_BRANCH}" == "master" ]]; then
