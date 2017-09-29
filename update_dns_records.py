@@ -70,8 +70,6 @@ def update_dns_record(zone_id, auth_email, auth_key, subdomain, domain, ip_addre
 
 
 def main():
-    # TODO: support proxied records with a separate annotation? (or maybe all records should be proxied...)
-
     argparser = argparse.ArgumentParser(description='Updates Cloudflare DNS records')
     argparser.add_argument('--domain',
                            metavar='DOMAIN',
