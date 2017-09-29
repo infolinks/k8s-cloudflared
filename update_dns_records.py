@@ -46,8 +46,7 @@ def update_dns_record(zone_id, auth_email, auth_key, subdomain, domain, ip_addre
             #   using a wrong URL here CAN *** DELETE THE WHOLE ZONE *** !!!!!!!!!!!
             ##########################################################################################
             delete_url = CF_ZONE_RECORD_ID % (zone_id, rec_id)
-            print "Deleting DNS record with ID '%s' using URL: %s" % (rec_id, delete_url)
-            # TODO: print IP address of record before deleting it
+            print "Deleting DNS record with ID '%s' (%s) using URL: %s" % (rec_id, delete_url, rec['content'])
             requests.delete(delete_url,
                             headers=build_cloudflare_request_headers(auth_email, auth_key)) \
                 .raise_for_status()
@@ -88,7 +87,6 @@ def main():
                            help='authentication key of the Cloudflare account')
     args = argparser.parse_args()
 
-    # TODO: consider caching Cloudflare zone ID value in a file
     zone_id_ = requests.get(CF_ZONES_URL,
                             headers=build_cloudflare_request_headers(args.auth_email, args.auth_key),
                             params={'name': args.domain}).json()['result'][0]['id']
@@ -109,6 +107,7 @@ def main():
             for ip_address in service_ip_addresses:
                 subdomain = dns[0:dns.rfind('.' + args.domain)] if dns.endswith('.' + args.domain) else dns
                 update_dns_record(zone_id_, args.auth_email, args.auth_key, subdomain, args.domain, ip_address)
+
 
 if __name__ == "__main__":
     main()
