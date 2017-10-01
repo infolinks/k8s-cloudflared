@@ -1,3 +1,4 @@
+# TODO: use alpine variant of cloud-sdk image
 FROM google/cloud-sdk:168.0.0
 MAINTAINER Arik Kfir <arik@infolinks.com>
 RUN apt-get update -qqy && apt-get install -qqy jq && rm -rf /var/lib/apt/lists/* && \
