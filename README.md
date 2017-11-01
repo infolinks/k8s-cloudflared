@@ -1,6 +1,6 @@
 # k8s-cloudflared
 
-[![Build Status](https://travis-ci.org/infolinks/k8s-cloudflared.svg?branch=master)](https://travis-ci.org/infolinks/k8s-cloudflared)
+[![Build status](https://badge.buildkite.com/8e3145c6e8516acd680b71ea97e5bfa18073f9ee4eb286126c.svg)](https://buildkite.com/infolinks/k8s-cloudflared)
 
 Container for continually updating Cloudflare DNS records for Kubernetes
 `Service` and `Ingress` objects found in a cluster.
@@ -42,7 +42,9 @@ to point to `1.2.3.4` in Cloudflare.
 
 ## Ingress Resources
 
-The same applies to `Ingress` resources in the cluster.
+The same applies to `Ingress` resources in the cluster, but you don't
+have to define the `dns` annotation - the host names will be taken
+automatically from the host rules.
 
 ## Deployment
 
