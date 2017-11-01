@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
 
-AUTH_EMAIL_FILE=./conf/cf_auth_email.txt
-AUTH_KEY_FILE=./conf/cf_auth_key.txt
-DOMAIN_FILE=./conf/cf_domain.txt
+# small IntelliJ hack to prevent warning on non-existing variables
+if [[ "THIS_WILL_NEVER_BE_TRUE" == "true" ]]; then
+    DOMAIN=${DOMAIN}
+    AUTH_EMAIL=${AUTH_EMAIL}
+    AUTH_KEY=${AUTH_KEY}
+fi
 
 while true; do
     # read domain name
-    [[ -e "${DOMAIN_FILE}" ]] && DOMAIN=$(cat ${DOMAIN_FILE})
     if [[ -z "${DOMAIN}" ]]; then
-        echo "DOMAIN not defined, and empty Cloudflare domain at '${DOMAIN_FILE}'!" >&2
+        echo "DOMAIN environment variable not defined" >&2
         exit 1
     fi
 
     # read Cloudflare authentication Email
-    [[ -e "${AUTH_EMAIL_FILE}" ]] && AUTH_EMAIL=$(cat ${AUTH_EMAIL_FILE})
     if [[ -z "${AUTH_EMAIL}" ]]; then
-        echo "AUTH_EMAIL not defined, and empty Cloudflare authentication Email at '${AUTH_EMAIL_FILE}'!" >&2
+        echo "AUTH_EMAIL environment variable not defined" >&2
         exit 1
     fi
 
     # read Cloudflare authentication key
-    [[ -e "${AUTH_KEY_FILE}" ]] && AUTH_KEY=$(cat ${AUTH_KEY_FILE})
     if [[ -z "${AUTH_KEY}" ]]; then
-        echo "AUTH_KEY not defined, and empty Cloudflare authentication key at '${AUTH_KEY_FILE}'!" >&2
+        echo "AUTH_KEY environment variable not defined" >&2
         exit 1
     fi
 

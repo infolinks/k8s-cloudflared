@@ -1,0 +1,9 @@
+steps:
+
+  - label: Build versioned Docker image
+    command:
+      - gcloud docker -- pull gcr.io/infolinks-gcr/k8s-cloudflared:${BUILDKITE_COMMIT}
+      - gcloud docker -- tag gcr.io/infolinks-gcr/k8s-cloudflared:${BUILDKITE_COMMIT} infolinks/k8s-cloudflared:${VERSION}
+      - gcloud docker -- push infolinks/k8s-cloudflared:${VERSION}
+      - gcloud docker -- tag gcr.io/infolinks-gcr/k8s-cloudflared:${BUILDKITE_COMMIT} infolinks/k8s-cloudflared:latest
+      - gcloud docker -- push infolinks/k8s-cloudflared:latest
