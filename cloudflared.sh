@@ -38,9 +38,7 @@ while true; do
                         "name": .metadata.name,
                         ips: [.status.loadBalancer.ingress[].ip],
                         "dns": .metadata.annotations.dns|fromjson
-                    }]' | $(dirname $0)/update_dns_records.py --domain "${DOMAIN}" \
-                                                              --auth-email "${AUTH_EMAIL}" \
-                                                              --auth-key "${AUTH_KEY}"
+                    }]' | $(dirname $0)/update_dns_records.py "${DOMAIN}" "${AUTH_EMAIL}" "${AUTH_KEY}"
     if [[ $? != 0 ]]; then
         echo "Updating service DNS records failed!" >&2
         exit 1
@@ -58,9 +56,7 @@ while true; do
                         "name": .metadata.name,
                         ips: [.status.loadBalancer.ingress[].ip],
                         "dns": [ .spec.rules[].host ]
-                    }]' | $(dirname $0)/update_dns_records.py --domain "${DOMAIN}" \
-                                                              --auth-email "${AUTH_EMAIL}" \
-                                                              --auth-key "${AUTH_KEY}"
+                    }]' | $(dirname $0)/update_dns_records.py "${DOMAIN}" "${AUTH_EMAIL}" "${AUTH_KEY}"
     if [[ $? != 0 ]]; then
         echo "Updating ingress DNS records failed!" >&2
         exit 1

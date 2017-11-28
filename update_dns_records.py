@@ -18,7 +18,7 @@ def build_cloudflare_request_headers(auth_email: str, auth_key: str) -> Mapping[
     }
 
 
-def update_dns_record(zone_id: int, auth_email: str, auth_key: str, subdomain: str, domain: str, ip_address: str):
+def update_dns_record(zone_id: str, auth_email: str, auth_key: str, subdomain: str, domain: str, ip_address: str):
     records_url: str = f"{CF_BASE_URL}/zones/{zone_id}/dns_records"
     full_name: str = subdomain + '.' + domain
     desired_record: dict = {
@@ -76,8 +76,8 @@ def update_dns_record(zone_id: int, auth_email: str, auth_key: str, subdomain: s
 def main():
     argparser = argparse.ArgumentParser(description='Updates Cloudflare DNS records')
     argparser.add_argument('domain', help='public suffix domain name, eg. \'mydomain.com\'')
-    argparser.add_argument('auth-email', help='Email of the account used to connect to Cloudflare')
-    argparser.add_argument('auth-key', help='authentication key of the Cloudflare account')
+    argparser.add_argument('auth_email', metavar='EMAIL', help='Email of the account used to connect to Cloudflare')
+    argparser.add_argument('auth_key', metavar='KEY', help='authentication key of the Cloudflare account')
     args = argparser.parse_args()
 
     zone: dict = requests.get(
@@ -100,7 +100,7 @@ def main():
         for dns in service_domain_names:
             for ip_address in service_ip_addresses:
                 subdomain: str = dns[0:dns.rfind('.' + args.domain)] if dns.endswith('.' + args.domain) else dns
-                update_dns_record(zone_id=int(zone['id']),
+                update_dns_record(zone_id=zone['id'],
                                   auth_email=args.auth_email,
                                   auth_key=args.auth_key,
                                   subdomain=subdomain,
