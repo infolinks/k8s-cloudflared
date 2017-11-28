@@ -1,4 +1,4 @@
-*.iml
-*.md
-LICENSE
-.python2.7
+/*.iml
+/*.md
+/LICENSE
+/.python3
