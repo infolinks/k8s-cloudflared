@@ -76,8 +76,8 @@ def update_dns_record(zone_id: int, auth_email: str, auth_key: str, subdomain: s
 def main():
     argparser = argparse.ArgumentParser(description='Updates Cloudflare DNS records')
     argparser.add_argument('domain', help='public suffix domain name, eg. \'mydomain.com\'')
-    argparser.add_argument('auth-email', dest='auth_email', help='Email of the account used to connect to Cloudflare')
-    argparser.add_argument('auth-key', dest='auth_key', help='authentication key of the Cloudflare account')
+    argparser.add_argument('auth_email', metavar='EMAIL', help='Email of the account used to connect to Cloudflare')
+    argparser.add_argument('auth_key', metavar='KEY', help='authentication key of the Cloudflare account')
     args = argparser.parse_args()
 
     zone: dict = requests.get(
