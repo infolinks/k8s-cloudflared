@@ -53,10 +53,9 @@ def update_dns_record(zone_id: str, auth_email: str, auth_key: str, subdomain: s
             ##########################################################################################
             delete_url = f"{records_url}/{rec_id}"
             print(f"Deleting DNS record with ID '{rec_id}' ({rec['content']}) using: {delete_url}")
-            # TODO: re-enable DNS record deletion
-            # requests.delete(url=delete_url,
-            #                 headers=build_cloudflare_request_headers(auth_email=auth_email, auth_key=auth_key))\
-            #     .raise_for_status()
+            requests.delete(url=delete_url,
+                            headers=build_cloudflare_request_headers(auth_email=auth_email, auth_key=auth_key)) \
+                .raise_for_status()
 
         # print(f"Creating replacement record: '{full_name}' -> '{ip_address}'")
         # requests.post(url=records_url,
