@@ -2,18 +2,11 @@
 
 # small IntelliJ hack to prevent warning on non-existing variables
 if [[ "THIS_WILL_NEVER_BE_TRUE" == "true" ]]; then
-    DOMAIN=${DOMAIN}
     AUTH_EMAIL=${AUTH_EMAIL}
     AUTH_KEY=${AUTH_KEY}
 fi
 
 while true; do
-    # read domain name
-    if [[ -z "${DOMAIN}" ]]; then
-        echo "DOMAIN environment variable not defined" >&2
-        exit 1
-    fi
-
     # read Cloudflare authentication Email
     if [[ -z "${AUTH_EMAIL}" ]]; then
         echo "AUTH_EMAIL environment variable not defined" >&2
@@ -38,7 +31,7 @@ while true; do
                         "name": .metadata.name,
                         ips: [.status.loadBalancer.ingress[].ip],
                         "dns": .metadata.annotations.dns|fromjson
-                    }]' | $(dirname $0)/update_dns_records.py "${DOMAIN}" "${AUTH_EMAIL}" "${AUTH_KEY}"
+                    }]' | $(dirname $0)/update_dns_records.py "${AUTH_EMAIL}" "${AUTH_KEY}"
     if [[ $? != 0 ]]; then
         echo "Updating service DNS records failed!" >&2
         exit 1
@@ -57,7 +50,7 @@ while true; do
                         "name": .metadata.name,
                         ips: [.status.loadBalancer.ingress[].ip],
                         "dns": [ .spec.rules[].host ]
-                    }]' | $(dirname $0)/update_dns_records.py "${DOMAIN}" "${AUTH_EMAIL}" "${AUTH_KEY}"
+                    }]' | $(dirname $0)/update_dns_records.py "${AUTH_EMAIL}" "${AUTH_KEY}"
     if [[ $? != 0 ]]; then
         echo "Updating ingress DNS records failed!" >&2
         exit 1
