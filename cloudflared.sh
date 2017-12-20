@@ -48,6 +48,7 @@ while true; do
     # them to our Python script which will ensure their DNS records are correctly defined in Cloudflare
     kubectl get ingress --all-namespaces --output=json | jq -r '
                     [.items[] |
+                    select(.metadata.name | startswith( "kube-lego-" ) | not ) |
                     select(.status.loadBalancer) |
                     select(.status.loadBalancer.ingress) |
                     select(.status.loadBalancer.ingress[].ip) |
