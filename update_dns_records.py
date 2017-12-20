@@ -2,110 +2,137 @@
 
 import argparse
 import json
+import random
 import sys
+import time
+from pathlib import Path
 from typing import Mapping, Sequence, Any
 
 import requests
 
-# base Cloudflare URL
-CF_BASE_URL = "https://api.cloudflare.com/client/v4"
+REQ_CONFIG: dict = {}
 
 
-def build_cloudflare_request_headers(auth_email: str, auth_key: str) -> Mapping[str, str]:
-    return {
-        "Content-Type": "application/json",
-        "X-Auth-Key": auth_key,
-        "X-Auth-Email": auth_email
-    }
+def get_json(path: str, params: dict = None) -> dict:
+    return requests.get(url=f"https://api.cloudflare.com/client/v4{path}",
+                        headers=REQ_CONFIG['headers'],
+                        params=params).json()
 
 
-def update_dns_record(zone_id: str, auth_email: str, auth_key: str, subdomain: str, domain: str, ip_address: str):
-    records_url: str = f"{CF_BASE_URL}/zones/{zone_id}/dns_records"
-    full_name: str = subdomain + '.' + domain
-    desired_record: dict = {
-        'type': 'A',
-        'name': subdomain,
-        'content': ip_address,
-        'ttl': 1,
-        'proxied': False
-    }
+def post_json(path: str, json: dict = None) -> None:
+    requests.post(url=f"https://api.cloudflare.com/client/v4{path}",
+                  headers=REQ_CONFIG['headers'],
+                  json=json).raise_for_status()
 
-    dns_lookup: dict = requests.get(url=records_url,
-                                    headers=build_cloudflare_request_headers(auth_email=auth_email, auth_key=auth_key),
-                                    params={'name': full_name}).json()
 
-    if 'result' not in dns_lookup or len(dns_lookup['result']) == 0:
-        print(f"Creating missing DNS record: '{full_name}' -> '{ip_address}'")
-        requests.post(url=records_url,
-                      headers=build_cloudflare_request_headers(auth_email=auth_email, auth_key=auth_key),
-                      json=desired_record).raise_for_status()
+def delete(path: str, params: dict = None) -> None:
+    requests.delete(url=f"https://api.cloudflare.com/client/v4{path}",
+                    headers=REQ_CONFIG['headers'],
+                    params=params).raise_for_status()
 
-    elif len(dns_lookup['result']) > 1:
-        print(f"Too many DNS records found for domain name '{full_name}'! (replacing all)", file=sys.stderr)
-        for rec in dns_lookup['result']:
-            rec_id: str = rec['id']
-            if not rec_id or len(rec_id) == 0:
-                raise Exception("empty record ID encountered!")
 
-            ##########################################################################################
-            # CAREFUL WHEN FIDDLING HERE!!!!!!
-            #   using a wrong URL here CAN *** DELETE THE WHOLE ZONE *** !!!!!!!!!!!
-            ##########################################################################################
-            delete_url = f"{records_url}/{rec_id}"
-            print(f"Deleting DNS record with ID '{rec_id}' ({rec['content']}) using: {delete_url}")
-            requests.delete(url=delete_url,
-                            headers=build_cloudflare_request_headers(auth_email=auth_email, auth_key=auth_key)) \
-                .raise_for_status()
+def fetch_dns_records(zone_id: str, full_dns_name: str) -> Sequence[dict]:
+    # fetch DNS "A" records for the given name
+    query_result: dict = get_json(path=f"/zones/{zone_id}/dns_records", params={'name': full_dns_name, 'type': 'A'})
+    return query_result['result'] if 'result' in query_result else []
 
-        # print(f"Creating replacement record: '{full_name}' -> '{ip_address}'")
-        # requests.post(url=records_url,
-        #               headers=build_cloudflare_request_headers(auth_email=auth_email, auth_key=auth_key),
-        #               json=desired_record).raise_for_status()
 
-    else:
-        rec: dict = dns_lookup['result'][0]
-        rec_id: str = rec['id']
-        rec_ip_address: str = rec['content']
-        if rec_ip_address != ip_address:
-            print(f"Updating DNS record '{rec_id}': '{full_name}' -> '{ip_address}'")
-            requests.put(url=f"{records_url}/{rec_id}",
-                         headers=build_cloudflare_request_headers(auth_email=auth_email, auth_key=auth_key),
-                         json=desired_record).raise_for_status()
+def create_dns_record(zone_id: str, subdomain: str, ip_address: str) -> None:
+    post_json(path=f"/zones/{zone_id}/dns_records", json={
+        "type": "A",
+        "name": subdomain,
+        "content": ip_address,
+        "proxied": False,
+        "ttl": 120
+    })
+
+
+def delete_dns_record(zone_id: str, rec_id: str) -> None:
+    delete(path=f"/zones/{zone_id}/dns_records/{rec_id}")
+
+
+def update_dns_record(zone_id: str, subdomain: str, domain: str, ip_addresses: Sequence[str]) -> None:
+    # fetch DNS "A" records for the given name
+    actual_recs: Sequence[dict] = fetch_dns_records(zone_id=zone_id, full_dns_name=subdomain + '.' + domain)
+
+    # create records for IP addresses without corresponding DNS record, and also mark actual records we want to keep,
+    # if they are pointing to one of the given IP addresses; records that do not point to any of our given IP addresses
+    # will NOT be marked for preservation, and will be deleted in a subsequent iteration
+    for ip_address in ip_addresses:
+        found: bool = False
+        for actual_rec in actual_recs:
+            if ip_address == actual_rec['content']:
+                found: bool = True
+                actual_rec['preserve'] = True
+                break
+        if not found:
+            print(f"Adding DNS record: '{subdomain + '.' + domain}' -> '{ip_address}'")
+            create_dns_record(zone_id=zone_id, subdomain=subdomain, ip_address=ip_address)
+
+    # iterate actual records that have not been marked for preservation (ie. they point to IP addresses that are not
+    # in the given list of IP addresses) and DELETE them via the API
+    #
+    ##########################################################################################
+    # CAREFUL WHEN FIDDLING HERE!!!!!!
+    #   using a wrong URL here CAN *** DELETE THE WHOLE ZONE *** !!!!!!!!!!!
+    ##########################################################################################
+    for actual_rec in [rec for rec in actual_recs if 'preserve' not in rec or not rec['preserve']]:
+        rec_id: str = actual_rec['id']
+        if not rec_id or len(rec_id) == 0:
+            raise Exception("empty record ID encountered!")
+        print(f"Deleting DNS record '{rec_id}': '{subdomain + '.' + domain}' -> '{actual_rec['content']}'")
+        delete_dns_record(zone_id=zone_id, rec_id=rec_id)
 
 
 def main():
     argparser = argparse.ArgumentParser(description='Updates Cloudflare DNS records')
-    argparser.add_argument('domain', help='public suffix domain name, eg. \'mydomain.com\'')
     argparser.add_argument('auth_email', metavar='EMAIL', help='Email of the account used to connect to Cloudflare')
     argparser.add_argument('auth_key', metavar='KEY', help='authentication key of the Cloudflare account')
+    argparser.add_argument('-f', '--file', dest='file', metavar='FILE',
+                           help='file to read JSON from (defaults to stdin)')
     args = argparser.parse_args()
 
-    zone: dict = requests.get(
-        url=f"{CF_BASE_URL}/zones",
-        headers=build_cloudflare_request_headers(auth_email=args.auth_email, auth_key=args.auth_key),
-        params={'name': args.domain}).json()['result'][0]
+    # update configuration
+    REQ_CONFIG['headers'] = {
+        "Content-Type": "application/json",
+        "X-Auth-Email": args.auth_email,
+        "X-Auth-Key": args.auth_key
+    }
 
     # read JSON from stdin
     try:
-        dns_expected_state: Sequence[Mapping[str, Any]] = json.loads('\n'.join(sys.stdin.readlines()))
+        if args.file:
+            with Path(args.file).open() as f:
+                dns_expected_state: Sequence[Mapping[str, Any]] = json.loads(f.read())
+        else:
+            dns_expected_state: Sequence[Mapping[str, Any]] = json.loads('\n'.join(sys.stdin.readlines()))
     except:
         sys.stderr.write("Failed reading JSON from stdin!\n")
         sys.stderr.flush()
         raise
 
+    # discover our zone ID
+    zones: Sequence[dict] = get_json(path=f"/zones")['result']
+
     # process DNS JSON, updating each individual records for each individual service
-    for svc in dns_expected_state:
-        service_domain_names: Sequence[str] = svc['dns']
-        service_ip_addresses: Sequence[str] = svc['ips']
-        for dns in service_domain_names:
-            for ip_address in service_ip_addresses:
-                subdomain: str = dns[0:dns.rfind('.' + args.domain)] if dns.endswith('.' + args.domain) else dns
-                update_dns_record(zone_id=zone['id'],
-                                  auth_email=args.auth_email,
-                                  auth_key=args.auth_key,
-                                  subdomain=subdomain,
-                                  domain=args.domain,
-                                  ip_address=ip_address)
+    try:
+        for svc in dns_expected_state:
+            for dns in svc['dns']:
+                for zone in zones:
+                    domain: str = zone['name']
+                    if dns.endswith(domain):
+                        subdomain: str = dns[0:dns.rfind('.' + domain)] if dns.endswith('.' + domain) else dns
+                        update_dns_record(zone_id=zone['id'],
+                                          subdomain=subdomain,
+                                          domain=domain,
+                                          ip_addresses=svc['ips'])
+    except:
+        # on error we sleep for a random time, to prevent abusing Cloudflare APIs
+        rand = random.randrange(1, 5, 1)
+        print(f"Encountered an error! sleeping for {rand} seconds to prevent abusing Cloudflare APIs "
+              f"(will print the error afterwards)")
+        time.sleep(rand)
+        raise
 
 
 if __name__ == "__main__":
