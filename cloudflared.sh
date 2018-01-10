@@ -56,6 +56,16 @@ while true; do
         exit 1
     fi
 
+    # Get a list of secrets containing certificates
+    kubectl get secrets --all-namespaces --output=json | jq -r '
+                .items[] |
+                select(.type=="kubernetes.io/tls") |
+                {type: .type, name: .metadata.name, data: .data}
+                ' | $(dirname $0)/upload_certificate.py "${DOMAIN}" "${AUTH_EMAIL}" "${AUTH_KEY}"
+    if [[ $? != 0 ]];then
+        echo "Uploading certificates to Cloudflare failed!" >&2
+        exit 1
+    fi
     # rinse & repeat
     sleep 10
     if [[ $? != 0 ]]; then
